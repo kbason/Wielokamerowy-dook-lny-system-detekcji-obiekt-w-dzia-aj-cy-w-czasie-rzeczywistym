@@ -1,0 +1,166 @@
+\chapter{Przykłady elementów pracy dyplomowej}
+
+\section{Liczba}
+
+Pakiet \texttt{siunitx} zadba o to, by liczba została poprawnie sformatowana: \\
+\begin{center}
+	\num{1234567890.0987654321}
+\end{center}
+
+
+\section{Rysunek}
+
+Pakiet \texttt{subcaption} pozwala na umieszczanie w podpisie rysunku odnośników do ,,podilustracji'': \\
+
+\begin{figure}[h]
+	\centering
+	\begin{subfigure}{0.35\textwidth}
+		\centering
+		\framebox[2.0\width]{A}
+		\subcaption{\label{subfigure_a}}
+	\end{subfigure}
+	\begin{subfigure}{0.35\textwidth}
+		\centering
+		\framebox[2.0\width]{B}
+		\subcaption{\label{subfigure_b}}
+	\end{subfigure}
+	
+	\caption{\label{fig:subcaption_example} Przykład użycia \texttt{\textbackslash subcaption}: \protect\subref{subfigure_a} litera A, \protect\subref{subfigure_b} litera B.}
+\end{figure}
+
+\begin{figure}
+\centering
+
+\begin{tabular}{cccc}
+\subfloat[Object detection]{\includegraphics[width = 1.5in]{imgs/obj_bbox.jpg}} &
+\subfloat[Object segmentation]{\includegraphics[width = 1.5in]{imgs/obj_mask.jpg}} \\
+\subfloat[Drivable area segmentation]{\includegraphics[width = 1.5in]{imgs/drivable.jpg}} &
+\subfloat[Lane segmentation]{\includegraphics[width = 1.5in]{imgs/lanes.jpg}} 
+\end{tabular}
+% \caption{Przykłady zbiorów uczących. Zbiór (b) wygenerowano tylko dla sieci MultiTask V3, a zbiory (a),(c) i (d) dla wszystkich modeli.}
+\caption{Examples of training sets. Set (b) was generated for the MultiTask V3 network only, and sets (a), (c) and (d) for all models.}
+\label{fig:example_dataset}
+\end{figure}
+
+
+\begin{figure}[!]	
+\begin{adjustwidth}{0cm}{0cm}
+% \centering %% If there is a figure in wide page, please release command \centering
+\includegraphics[width=1\linewidth]{imgs/fast_example.pdf}
+\end{adjustwidth}
+\caption{Determining the feature point flag for an exemplary image patch.
+In that case none of the 16 pixels on the Bresenham circle have an intensity above $I_p + t$ ($229$ for $t=20$), while 14 of them have an intensity below $I_p - t$ ($189$).
+This results in two 16-bit vectors, which are compared with 16 different patterns, each consisting of 16 bits: 9 ones and 7 zeros.
+The vector representing pixels with intensity higher than $I_p + t$ does not match any pattern, while the second one matches 6 different patterns in total. Therefore, we determine the centre pixel is a~feature point (it fulfils the FAST's ``lower than'' condition). }
+\label{fig:fast_example_flag}
+\end{figure}
+
+
+
+\section{Tabela}
+
+Pakiet \texttt{threeparttable} umożliwia dodanie do tabeli adnotacji: \\
+
+\begin{table}[h]
+	\centering
+	
+	\begin{threeparttable}
+		\caption{Przykład tabeli}
+		\label{tab:table_example}
+		
+		\begin{tabularx}{0.6\textwidth}{C{1}}
+			\toprule
+			\thead{Nagłówek\tnote{a}} \\
+			\midrule
+			Tekst 1 \\
+			Tekst 2 \\
+			\bottomrule
+		\end{tabularx}
+		
+		\begin{tablenotes}
+			\footnotesize
+			\item[a] Jakiś komentarz\textellipsis
+		\end{tablenotes}
+		
+	\end{threeparttable}
+\end{table}
+
+
+\begin{table}[!t]
+\setlength{\tabcolsep}{6pt}
+\centering
+\caption{Comparison of resource consumption on the Kria KV260 platform.}
+\begin{tabular}{|c|c|c|c|c|c|c|c|}
+\hline
+\multirow{2}{*}{Resource usage} &  \multicolumn{4}{c|}{CPU cores} & \multirow{2}{*}{RAM} & \multirow{2}{*}{CMA} & \multirow{2}{*}{Power}\\
+\cline{2-5}
+{} & CPU$_0$ & CPU$_1$ & CPU$_2$ & CPU$_3$ & {} & {} & {}\\ 
+\hline
+Used & 85 \%  & 22 \%  & 3 \% & 3 \%  & 38 \%  & 6 \%  & 4.95 W\\
+\hline
+\end{tabular}
+\label{tab:consumption}
+\end{table}
+
+
+\section{Wzory matematyczne}
+
+Czasem zachodzi potrzeba wytłumaczenia znaczenia symboli użytych w równaniu. Można to zrobić z użyciem zdefiniowanego na potrzeby niniejszej klasy środowiska \texttt{eqwhere}.
+
+\begin{equation}
+E = mc^2
+\end{equation}
+gdzie
+\begin{eqwhere}[2cm]
+	\item[$m$] masa
+	\item[$c$] prędkość światła w próżni
+\end{eqwhere}
+
+Odległość półpauzy od lewego marginesu należy dobrać pod kątem najdłuższego symbolu (bądź listy symboli) poprzez odpowiednie ustawienie parametru tego środowiska (domyślnie: 2 cm).
+
+
+\begin{equation}
+\label{eq:moments_mod_orient_approx}
+	\begin{aligned}
+		\tan\theta_{i} & \leq & \tan\theta (x,y) & \leq \tan\theta_{i+1} \\
+		m_{10}(x,y) \tan\theta_{i} & \leq & m_{01} (x,y) & \leq m_{10} (x,y) \tan\theta_{i+1}
+	\end{aligned}
+\end{equation}
+where:
+$\theta(x,y)$ is the feature orientation, 
+$m_{10}(x,y), m_{01}(x,y)$ are the image moments, 
+$\tan\theta_{i}$, $\tan\theta_{i+1}$ are the tangent values of two adjacent intervals to which the orientation will be assigned, 10-bit fixed-point. 
+
+
+\begin{equation}
+\label{eq:BRIEF test}
+ \tau (\textbf{p}; u_i, v_i ) := 
+ \begin{cases} 
+ 1 & \text{for $I(u_i) < I(v_i)$} \\
+ 0 & \text{for $I(u_i) \ge I(v_i)$}
+ \end{cases}
+\end{equation}
+where 
+\textbf{p} is the smoothed image patch around a~given feature point $(u_i, v_i)$, 
+$u_i, v_i$ are the coordinates of sample pairs \textbf{p} $(u_i \neq v_i)$, 
+$I(w)$ is the brightness of the image in a~point $w = (x, y)$.
+
+
+\begin{equation}
+\label{eq:sum_corner_score}
+V = \max \left ( \sum_{x \in S_{bright}} \left | I_{p \to x} - I_p \right | - t, \sum_{x \in S_{dark}} \left | I_{p} - I_{p \to x} \right | - t \right )
+\end{equation}
+\begin{equation}
+\begin{aligned}
+S_{bright} &= \left \{ x|I_{p \to x} \ge I_p + t \right \} \\
+S_{dark} &= \left \{ x|I_{p \to x} \le I_p - t \right \}
+\end{aligned}
+\end{equation}
+
+\begin{equation}\label{eq:hog_mod_amplituda_SRA}
+	\begin{aligned}
+		m(x,y) & = \sqrt{G_{x}(x,y)^{2} + G_{y} (x,y)^{2}} \\ & \approx \max ((0.875a + 0.5b), a) \\
+		a      & = \max(\left| G_{x} (x,y)\right| ,\left| G_{y} (x,y)\right| )               \\
+		b      & = \min(\left| G_{x} (x,y)\right| ,\left| G_{y} (x,y)\right| )
+	\end{aligned}
+\end{equation}

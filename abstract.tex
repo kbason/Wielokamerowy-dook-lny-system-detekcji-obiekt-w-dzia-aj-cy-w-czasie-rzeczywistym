@@ -1,0 +1,19 @@
+\begin{abstractpage}
+\begin{abstract}{polish}
+    Praca przedstawia projekt i realizację wielokamerowego, dookólnego systemu detekcji obiektów działającego w czasie rzeczywistym. System składa się z kilku węzłów kamerowych opartych na ESP32-CAM, które lokalnie wykonują inferencję lekkiego modelu FOMO (wytrenowanego w Edge Impulse i skwantyzowanego do int8), a wyniki detekcji przesyłają bezprzewodowo przez Wi-Fi z użyciem protokołu UDP. Dane trafiają do komputera z ROS 2,  gdzie po fuzji danych z nakładających się pól widzenia publikowane są jako położenia obiektów we wspólnym układzie współrzędnych. W pracy omówiono architekturę systemu, budowę datasetu i trening modelu, oprogramowanie węzłów oraz kalibrację i fuzję danych. Przedstawiono także wyniki testów jakości detekcji, dokładności położenia i opóźnień end-to-end.
+    \bigskip
+    
+    \textbf{Słowa kluczowe:}
+    detekcja obiektów, percepcja dookólna, system wielokamerowy, czas rzeczywisty, urządzenia brzegowe, TinyML, FOMO, ESP32-CAM, Edge Impulse, kwantyzacja modeli, kalibracja kamer, fuzja danych, ROS 2, systemy wbudowane
+\end{abstract}
+
+% \newpage
+
+\begin{abstract}{english}
+    This thesis presents the design and implementation of a real-time, multi-camera system for omnidirectional object detection. The system consists of several camera nodes based on the ESP32-CAM, each running a lightweight FOMO model locally (trained in Edge Impulse and quantized to int8) and sending detection results wirelessly over Wi-Fi using UDP. The data is received by a computer running ROS 2 where, after fusion of detections from overlapping fields of view, object positions are published in a common coordinate frame. The thesis covers the system architecture, dataset creation and model training, node software, and calibration and data fusion. It also reports test results for detection quality, positioning accuracy, and end-to-end latency.
+    \bigskip
+    
+    \textbf{Keywords:}
+    object detection, omnidirectional perception, multi-camera system, real-time processing, edge devices, TinyML, FOMO, ESP32-CAM, Edge Impulse, model quantization, camera calibration, data fusion, ROS 2, embedded systems
+\end{abstract}
+\end{abstractpage}

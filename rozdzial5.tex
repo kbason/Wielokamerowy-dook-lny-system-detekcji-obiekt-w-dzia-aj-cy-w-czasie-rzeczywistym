@@ -1,0 +1,99 @@
+% =====================================================================
+% Rozdział 5 – Testy i analiza wyników (~10 str.)
+% Systematycznie: zbiór testowy, wyniki referencyjne, miary ilościowe,
+% porównanie z wersją wyjściową, odniesienie do innych rozwiązań.
+% =====================================================================
+\chapter{Testy i~analiza wyników}
+\label{ch:testy}
+
+% ---------------------------------------------------------------------
+\section{Metodyka testów}
+\label{sec:metodyka}
+% - Stanowisko testowe: JetBot z obudową, otoczenie.
+% - Scenariusze: obiekt statyczny w różnych kierunkach i odległościach,
+%   obiekt w obszarze nakładania, kilka obiektów, obrót robota, różne
+%   oświetlenie.
+% - Pomiary wydajności w firmware: średnie i maksima z bloków po
+%   50 klatek, pierwszy blok odrzucany, jedna zmiana na krok, stałe
+%   warunki.
+% - Wzorzec prawdy dla kierunków: np. znaczniki kątów na podłodze.
+% Stan: ✅ (wydajność), ⏳ (scenariusze systemowe)
+
+
+% ---------------------------------------------------------------------
+\section{Ocena modelu i~jakość detekcji}
+\label{sec:jakosc-detekcji}
+% - Metryki Edge Impulse na zbiorze testowym: F1, precision, recall,
+%   macierz pomyłek.
+% - Zasoby: RAM (arena ok. 270 kB), flash, szacowany vs zmierzony czas
+%   inferencji na S3 (97 ms); int8 vs float32 (jeśli dostępne).
+% - Pojedyncza kamera: skuteczność od odległości, położenia w kadrze
+%   (środek vs krawędź), oświetlenia.
+% - Cały system: wykrywanie w każdym kierunku 360°, także na granicach
+%   kamer; fałszywe detekcje i pominięcia.
+% - Porównanie kamer o mniejszym i większym FOV. ❓ jeśli zrobisz.
+% - Tab.: metryki modelu.
+% - Rys.: macierz pomyłek.
+% - Rys.: skuteczność od odległości.
+% Stan: ⏳
+
+
+% ---------------------------------------------------------------------
+\section{Dokładność kalibracji i~fuzji}
+\label{sec:dokladnosc-kalibracji}
+% - RMS reprojekcji wszystkich kamer (podsumowanie z
+%   \ref{sec:kalibracja-wewn}).
+% - Błąd azymutu: zmierzony vs rzeczywisty, dla wielu kierunków wokół
+%   robota.
+% - Metoda A vs B2 na tym samym zestawie – zwłaszcza przy krawędziach
+%   kadru.
+% - Skuteczność fuzji: obiekt w obszarze nakładania daje jeden wynik,
+%   nie dwa.
+% - Rys.: błąd azymutu w funkcji kierunku.
+% - Tab.: A vs B2.
+% Stan: ⏳
+
+
+% ---------------------------------------------------------------------
+\section{Wydajność i~opóźnienia}
+\label{sec:wydajnosc}
+% - Przepustowość (FPS) a opóźnienie (od zdjęcia do wyniku) – to nie to
+%   samo.
+% - Przebieg optymalizacji węzła (porównanie z wersją wyjściową):
+%   1,8 -> 6,64 -> 7,08 -> 8,11 -> 9,13 -> 8,91 FPS;
+%   opóźnienie 668 -> 171 ms.
+%   Kroki: wyłączenie kontroli sterty, -O2 dla LUT, cache 64 kB, trwały
+%   interpreter, XCLK 20 MHz. Krok 6 (wejście z uint8) – sprawdzony,
+%   nie wszedł.
+% - Budżet opóźnień węzła: 171 ms = wiek klatki 61 ms + LUT 4,5 ms
+%   + DSP 5,3 ms + sieć neuronowa 97 ms + reszta; wiek klatki ≈ 1,5 okresu
+%   kamery (GRAB_LATEST, 2 bufory). Rozkład: sieć ≈ 87%, LUT ≈ 4%.
+% - Część po stronie komputera: transmisja Wi-Fi, odbiór, fuzja,
+%   publikacja ROS 2. ⏳
+% - Cały system: 6 węzłów naraz – FPS, opóźnienie end-to-end
+%   (zdjęcie -> komunikat ROS 2), utrata pakietów UDP. ⏳
+% - Znaczenie dla robota: przy obrocie 30°/s opóźnienie 171 ms ≈ 5° błędu
+%   kierunku (rząd jednej komórki FOMO) – stąd znacznik czasu zdjęcia.
+% - Tab.: przebieg optymalizacji.
+% - Rys.: FPS i opóźnienie po krokach.
+% - Rys.: oś czasu jednej klatki (Gantt).
+% Stan: ✅ (węzeł), ⏳ (system)
+
+
+% ---------------------------------------------------------------------
+\section{Ograniczenia i~porównanie z~innymi rozwiązaniami}
+\label{sec:ograniczenia}
+% - Fałszywe detekcje (podobne obiekty, odbicia); wpływ oświetlenia.
+% - Błąd kierunku przy ruchu robota – wpływ opóźnienia, skuteczność
+%   kompensacji z odometrii.
+% - Ograniczenia 96x96: małe/odległe obiekty, dokładność kątowa ≈ komórka
+%   FOMO.
+% - Ograniczenia Wi-Fi: zmienne opóźnienie, zakłócenia; pojedyncze błędy
+%   sterownika kamery (EV-VSYNC-OVF), sendto() errno=12 przy starcie.
+% - Porównanie z innymi rozwiązaniami (odniesienie do stanu wiedzy):
+%   LiDAR, kamera 360°, kilka kamer na jednym komputerze; wyniki
+%   FOMO/TinyML z literatury i benchmarków Espressif – koszt, FPS,
+%   opóźnienie, dokładność kątowa.
+% - Tab.: porównanie z innymi podejściami.
+% Stan: ⏳
+

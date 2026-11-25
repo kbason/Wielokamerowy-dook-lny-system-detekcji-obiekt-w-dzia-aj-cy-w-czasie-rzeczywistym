@@ -1,0 +1,97 @@
+% =====================================================================
+% Rozdział 2 – Podstawy teoretyczne i przegląd rozwiązań (~8–9 str.)
+% Teoria niezależna od projektu („jak to działa w ogóle”).
+% Skróty z tytułów (SoC, UDP, TCP) wyjaśnić na początku rozdziału.
+% =====================================================================
+\chapter{Podstawy teoretyczne i~przegląd rozwiązań}
+\label{ch:teoria}
+
+% ---------------------------------------------------------------------
+\section{Mikrokontrolery i~układy SoC w~systemach wbudowanych}
+\label{sec:mcu-soc}
+% - Mikrokontroler, mikroprocesor i SoC (System on Chip) – różnice;
+%   ESP32-S3 jako SoC.
+% - Hierarchia pamięci: wewnętrzna SRAM (szybka, mała), zewnętrzna PSRAM
+%   (duża, wolniejsza), flash (program, stałe, np. LUT), cache.
+% - Instrukcje wektorowe (SIMD) – podstawa przyspieszenia ESP-NN.
+% - DMA – przesyłanie klatek z kamery bez udziału procesora.
+% - System czasu rzeczywistego (FreeRTOS): zadania, priorytety, tick.
+% - Uzasadnienie: bez tych pojęć nie da się wyjaśnić wyników z
+%   \ref{sec:oprogramowanie-wezla} i \ref{sec:wydajnosc}
+%   (arena w PSRAM, cache 64 kB, koszt kontroli sterty).
+% Stan: ✅ (teoria)
+
+
+% ---------------------------------------------------------------------
+\section{Detekcja obiektów na mikrokontrolerach}
+\label{sec:detekcja-mcu}
+% - Detekcja obiektów (klasa + położenie) a klasyfikacja obrazu.
+% - Klasyczne detektory: SSD, YOLO – prostokąty, dużo pamięci i obliczeń.
+% - TinyML: ograniczenia (setki kB RAM, brak GPU, kilkaset MHz).
+% - FOMO (Faster Objects, More Objects):
+%   - zamiast prostokątów zwraca centroidy na siatce,
+%   - wyjście: mapa komórek (96x96, redukcja 8x -> siatka 12x12),
+%   - każda komórka ma prawdopodobieństwo klasy,
+%   - wycięta część MobileNetV2 (bez głowy klasyfikacyjnej).
+% - Zalety FOMO: wystarczy położenie (kierunek). Wady: brak rozmiaru
+%   obiektu, bliskie obiekty zlewają się w jedną komórkę.
+% - Porównanie z alternatywami na MCU (mniejsze YOLO, person detection
+%   Espressif) – dlaczego nie one.
+% - Kwantyzacja int8 (zwięźle, ok. 1 strona):
+%   - float32 vs int8; kwantyzacja po treningu:
+%     q = round(x/scale) + zero_point,
+%   - zyski: 4x mniejszy model, arytmetyka całkowita, SIMD;
+%     koszty: niewielki spadek dokładności, zbiór kalibracyjny,
+%   - dlaczego na MCU int8 to praktycznie jedyny rozsądny wybór,
+%   - opcjonalnie: liczba MAC (FOMO MobileNetV2 0.1, 96x96x1
+%     ≈ 3,5 mln MAC – wyliczenie własne).
+% - Tab.: FOMO / SSD / YOLO – wyjście, rozmiar modelu, RAM, czy mieści
+%   się na MCU.
+% Stan: ✅ (teoria)
+
+
+% ---------------------------------------------------------------------
+\section{Model kamery i~kalibracja}
+\label{sec:model-kamery}
+% - Model otworkowy (pinhole): rzutowanie punktu 3D na płaszczyznę obrazu.
+% - Macierz parametrów wewnętrznych K: fx, fy, cx, cy.
+% - Dystorsja radialna (k1, k2, k3) i styczna (p1, p2) – wzory,
+%   dystorsja beczkowa/poduszkowa.
+% - Parametry zewnętrzne: obrót R i przesunięcie t.
+% - Kalibracja szachownicą (metoda Zhanga), minimalizacja błędu
+%   reprojekcji; RMS reprojekcji jako miara jakości.
+% - HFOV = 2*atan(W / (2*fx)).
+% - Kierunek promienia z piksela: x_n = (u - cx)/fx -> azymut atan(x_n).
+% - Rys.: model otworkowy. Rys.: przykład dystorsji beczkowej.
+% Stan: ✅ (teoria)
+
+
+% ---------------------------------------------------------------------
+\section{Fuzja danych w~systemach wielokamerowych}
+\label{sec:fuzja-teoria}
+% - Po co fuzja: kilka kamer widzi ten sam obiekt w obszarach nakładania.
+% - Wspólny układ odniesienia: detekcje z układu kamery -> układ robota.
+% - Asocjacja danych: czy dwie detekcje to ten sam obiekt (progi kątowe,
+%   odległość, czas).
+% - Łączenie detekcji: średnia ważona pewnością, wybór najlepszej itp.
+% - Synchronizacja czasowa: znaczniki czasu.
+% - Przegląd istniejących systemów wielokamerowych (systemy dookólne
+%   w samochodach, roboty mobilne) – krótko.
+% Stan: ✅ (teoria)
+
+
+% ---------------------------------------------------------------------
+\section{Protokoły transportowe w~systemach czasu rzeczywistego}
+\label{sec:protokoly}
+% - Do ok. 1 strony (najłatwiejsze miejsce do skrócenia).
+% - TCP: połączeniowy, potwierdzenia, retransmisje, kolejność – kosztem
+%   opóźnień (head-of-line blocking).
+% - UDP: datagramy bez połączenia i retransmisji, nagłówek 8 B.
+% - Dlaczego UDP w czasie rzeczywistym: stary wynik detekcji jest
+%   bezwartościowy – lepiej zgubić pakiet niż czekać.
+% - Konsekwencje: obsługa utraty, duplikatów, kolejności po stronie
+%   aplikacji (numer sekwencyjny, znacznik czasu).
+% - Wi-Fi 2,4 GHz: wspólne medium, zmienne opóźnienie.
+% - Tab.: TCP vs UDP.
+% Stan: ✅ (teoria)
+

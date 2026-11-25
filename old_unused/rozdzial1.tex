@@ -1,0 +1,46 @@
+\chapter{Wprowadzenie}
+\label{cha:wprowadzenie}
+
+%---------------------------------------------------------------------------
+
+\section{Motywacja i kontekst}
+\label{sec:motywacja}
+
+Percepcja otoczenia jest jednym z podstawowych zadań współczesnych systemów robotycznych. Robot mobilny, aby bezpiecznie się poruszać i wchodzić w interakcje z otoczeniem, musi wiedzieć, jakie obiekty znajdują się wokół niego i gdzie dokładnie są położone. Ograniczone pole widzenia pojedynczej kamery sprawia, że obiekty znajdujące się z boku lub za robotem pozostają niewidoczne, co utrudnia planowanie ruchu i zwiększa ryzyko kolizji. Naturalnym rozwiązaniem jest zastosowanie wielu kamer, rozmieszczonych tak, aby ich pola widzenia pokrywały całe otoczenie, czyli zapewniały percepcję dookólną~\cite{TODO_percepcja_dookolna}.
+
+Równolegle do rozwoju robotyki rozwija się obszar tzw.\ edge AI, czyli uruchamiania modeli uczenia maszynowego bezpośrednio na urządzeniach o niewielkiej mocy obliczeniowej. Przetwarzanie obrazu na urządzeniu, zamiast przesyłania go do zewnętrznego komputera, zmniejsza obciążenie sieci, skraca opóźnienia i pozwala przesyłać jedynie wyniki detekcji. W tym nurcie powstały platformy z grupy TinyML oraz lekkie architektury detekcji, takie jak FOMO (\emph{Faster Objects, More Objects}), które zwracają położenie obiektów w postaci środków komórek siatki, a nie pełnych ramek ograniczających~\cite{TODO_tinyml, TODO_fomo}. Dzięki kwantyzacji i niewielkim rozmiarom sieci takie modele mogą działać na mikrokontrolerach.
+
+Typowe systemy wielokamerowe opierają się jednak na kosztownych kamerach i wydajnych komputerach pokładowych lub modułach GPU~\cite{TODO_systemy_wielokamerowe}. Dla wielu zastosowań, w szczególności edukacyjnych, badawczych i prototypowych, koszt ten jest istotną barierą. Moduły takie jak ESP32-CAM łączą w jednym urządzeniu mikrokontroler, interfejs Wi-Fi i kamerę, a ich cena jest wielokrotnie niższa od cen rozwiązań wymienionych wyżej. Ich możliwości są jednak ograniczone: niewielka ilość pamięci RAM, ograniczona moc obliczeniowa i stosunkowo prosty sensor obrazu. Powstaje zatem pytanie, czy zestaw takich węzłów, z których każdy samodzielnie wykonuje detekcję, można połączyć w spójny system percepcji dookólnej działający w czasie rzeczywistym.
+
+Zbudowanie takiego systemu wymaga rozwiązania kilku powiązanych problemów. Po pierwsze, model detekcji musi być na tyle mały, aby mieścił się w pamięci mikrokontrolera, a jednocześnie wystarczająco dokładny do zadanego zastosowania. Po drugie, tanie obiektywy wprowadzają zniekształcenia geometryczne, więc potrzebna jest kalibracja kamer, a wyniki detekcji z różnych węzłów trzeba przeliczyć do wspólnego układu współrzędnych. Po trzecie, ponieważ pola widzenia sąsiednich kamer mogą się nakładać, ten sam obiekt może zostać wykryty wielokrotnie i dlatego niezbędna jest fuzja danych. Po czwarte, wyniki muszą być przesyłane bezprzewodowo z małym opóźnieniem i udostępniane w formie dogodnej dla dalszych modułów systemu robotycznego. Jako warstwę integracyjną wybrano ROS~2 oraz micro-ROS, czyli jego odmianę przeznaczoną dla mikrokontrolerów~\cite{TODO_ros2, TODO_microros}, która jest szeroko stosowana w robotyce i umożliwia łatwe włączenie systemu w istniejące aplikacje.
+
+Niniejsza praca odpowiada na tę potrzebę. Przedstawia projekt i realizację niskokosztowego, wielokamerowego systemu detekcji obiektów opartego na węzłach ESP32-CAM, w którym detekcja jest wykonywana lokalnie na każdym węźle, a wyniki są przesyłane przez sieć Wi-Fi do komputera, gdzie podlegają fuzji i publikacji w ROS~2. Praca ma również wymiar badawczy, ponieważ pozwala ocenić, jakie granice dokładności i wydajności osiąga takie rozwiązanie przy ograniczeniach sprzętowych platformy.
+
+
+%---------------------------------------------------------------------------
+
+\section{Cel i~zakres pracy}
+\label{sec:celePracy}
+Celem niniejszej pracy było opracowanie wielokamerowego, dookólnego systemu detekcji i klasyfikacji obiektów, wykorzystującego kilka kamer opartych na modułach ESP32-CAM oraz sieć FOMO (\textit{Faster Objects, More Objects}), z udostępnieniem informacji o wykrytych obiektach w postaci komunikatów środowiska ROS~2 (micro-ROS).
+
+Osiągnięcie celu głównego wymagało realizacji następujących zadań szczegółowych:
+\begin{itemize}
+    \item opracowania procedury kalibracji systemu wielokamerowego,
+    \item opracowania algorytmu fuzji danych o położeniu obiektów zwracanych przez poszczególne kamery,
+    \item wykorzystania istniejącej lub zaprojektowania własnej płytki opartej na mikrokontrolerze, umożliwiającej komunikację z poszczególnymi modułami ESP32 i odbiór danych o wykrytych obiektach,
+    \item integracji systemu ze środowiskiem ROS~2 za pomocą micro-ROS, tak aby wyniki detekcji były dostępne jako standardowe komunikaty tego środowiska.
+\end{itemize}
+
+
+
+%---------------------------------------------------------------------------
+
+\section{Założenia i~ograniczenia systemu}
+\label{sec:zalozenia}
+
+
+%---------------------------------------------------------------------------
+
+\section{Układ pracy}
+\label{sec:ukladPracy}
+

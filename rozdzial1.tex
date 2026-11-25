@@ -1,0 +1,68 @@
+% =====================================================================
+% Rozdział 1 – Wprowadzenie (~3 str.)
+% =====================================================================
+\chapter{Wprowadzenie}
+\label{ch:wprowadzenie}
+
+% ---------------------------------------------------------------------
+\section{Motywacja i~kontekst pracy}
+\label{sec:motywacja}
+% - Potrzeba percepcji dookólnej (360°) w robotyce mobilnej: robot musi
+%   wiedzieć, co jest wokół niego, nie tylko przed nim.
+% - Typowe podejścia: obrotowy LiDAR, kamera 360°/rybie oko, kilka kamer
+%   na jednym mocnym komputerze – zalety i koszty (cena, pobór mocy,
+%   obciążenie komputera).
+% - Idea edge AI: przetwarzanie obrazu tam, gdzie powstaje; do komputera
+%   trafia kilka bajtów wyniku zamiast strumienia wideo.
+% - Dlaczego tanie mikrokontrolery z kamerą: niski koszt węzła, łatwa
+%   skalowalność liczby kamer, odciążenie komputera i sieci.
+% - Krótko: modele typu FOMO umożliwiają detekcję na mikrokontrolerze
+%   z rozsądną liczbą klatek na sekundę.
+% - Odniesienie do wszystkich elementów tytułu (wielokamerowy, dookólny,
+%   detekcja, czas rzeczywisty).
+% Stan: ✅ (tekst do napisania, bez pomiarów)
+
+
+% ---------------------------------------------------------------------
+\section{Cel, zakres i~założenia pracy}
+\label{sec:cel-zakres}
+% - Cel główny jednym zdaniem (parafraza z APD, czas przeszły):
+%   zaprojektowanie i wykonanie systemu z 6 węzłów kamerowych, który
+%   wykrywa obiekty wokół robota w czasie rzeczywistym i publikuje wyniki
+%   w ROS 2.
+% - Cele szczegółowe (lista):
+%   - wybór platformy sprzętowej węzła i kamer,
+%   - projekt obudowy i montaż systemu na robocie,
+%   - zebranie zbioru danych i wytrenowanie modelu FOMO,
+%   - oprogramowanie węzła (akwizycja, korekcja dystorsji, inferencja,
+%     wysyłka UDP),
+%   - procedura kalibracji kamer,
+%   - algorytm fuzji detekcji z wielu kamer,
+%   - integracja z ROS 2,
+%   - ocena jakości i wydajności systemu.
+% - Zakres: czego nie ma (brak pomiaru odległości, brak planowania ruchu
+%   robota, brak śledzenia obiektów – jeśli nie robisz).
+% - Założenia:
+%   - system wyznacza KIERUNEK (azymut) do obiektów; odległość nie jest
+%     mierzona – świadoma decyzja,
+%   - 6 węzłów kamerowych dookoła robota,
+%   - mała liczba klas (butelka + tło) – zasada działania; inne klasy
+%     wymagają tylko nowego modelu,
+%   - wymaganie wydajności: kilka–kilkanaście klatek na sekundę na kamerę,
+%   - Wi-Fi 2,4 GHz i UDP w jednej sieci lokalnej,
+%   - obliczenia ciężkie (fuzja, ROS 2) na komputerze nadrzędnym;
+%     na węzłach tylko detekcja.
+% - Ograniczenia: wejście modelu 96x96, warunki oświetleniowe, zakres
+%   odległości detekcji.
+% Stan: ✅
+
+
+% ---------------------------------------------------------------------
+\section{Układ pracy}
+\label{sec:uklad-pracy}
+% - Po jednym–dwóch zdaniach o każdym rozdziale 2–6
+%   (\ref{ch:teoria}, \ref{ch:projekt}, \ref{ch:implementacja},
+%   \ref{ch:testy}, \ref{ch:podsumowanie}).
+% - Pisać na końcu, gdy reszta jest gotowa.
+% Stan: ⏳ (na koniec)
+

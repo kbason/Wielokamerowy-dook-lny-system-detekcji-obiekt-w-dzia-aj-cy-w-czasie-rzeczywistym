@@ -1,0 +1,187 @@
+% =====================================================================
+% Rozdział 4 – Implementacja systemu (~16 str.)
+% Kolejność zgodna z przepływem danych: model -> kalibracja i LUT ->
+% węzeł -> UDP -> fuzja -> ROS 2. Narzędzia (ESP-IDF, Edge Impulse,
+% TFLite Micro, ESP-NN, Python, OpenCV, ROS 2) opisywać tam, gdzie są
+% użyte, z wersjami. Problemy techniczne krótko w miejscu wystąpienia
+% (problem -> przyczyna -> rozwiązanie).
+% =====================================================================
+\chapter{Implementacja systemu}
+\label{ch:implementacja}
+
+% ---------------------------------------------------------------------
+\section{Zbiór danych i~trening modelu}
+\label{sec:zbior-trening}
+% - Narzędzia akwizycji:
+%   - firmware ESP32-CAM + collect_dataset.py przez UART (Python wysyła
+%     „c”, ESP odpowiada „IMG:<base64 JPEG>”), sterowanie klawiaturą,
+%     nazewnictwo plików,
+%   - problemy: reset płytki przez DTR/RTS (ESP32-CAM-MB), zły model
+%     płytki w kodzie (OV3660),
+%   - drugie narzędzie: projekt ESP-IDF na ESP32-S3 – podgląd po Wi-Fi
+%     + przycisk capture.
+% - Dlaczego zdjęcia 320x240, a nie 96x96: zachowanie oryginałów,
+%   ponowne przetworzenie (LUT), wygodniejsze etykietowanie.
+% - Zbiór: butelka + tło; liczebność (plan ok. 150 + ok. 65) – faktyczne
+%   liczby ⏳; różnorodność (odległości, położenie w kadrze także przy
+%   krawędziach, oświetlenie, tła, typy butelek).
+% - Przetwarzanie: 320x240 -> LUT (\ref{sec:lut}) -> 96x96 -> PNG
+%   (bezstratnie). Model trenowany na obrazach po LUT – widzi dokładnie
+%   to, co węzeł.
+% - Etykietowanie w Edge Impulse, podział trening/test; dane publiczne
+%   tylko jako uzupełnienie; walidacja potoku na projekcie „Beer vs. Can”.
+% - Trening: wejście 96x96x1, FOMO na MobileNetV2 alpha 0.1, epoki,
+%   learning rate, augmentacja ⏳; kwantyzacja int8; eksport jako
+%   biblioteka C++ bez EON (dlaczego – \ref{sec:oprogramowanie-wezla}).
+% - Rys.: przykładowe zdjęcia przed i po LUT.
+% - Tab.: liczebność zbioru i parametry treningu.
+% Stan: ✅ / ⏳ (liczby, parametry)
+
+
+% ---------------------------------------------------------------------
+\section{Kalibracja parametrów wewnętrznych kamer}
+\label{sec:kalibracja-wewn}
+% - Procedura: szachownica (np. 9x6 narożników) na sztywnym podłożu,
+%   30–40 zdjęć na kamerę w trybie pracy (QVGA), wzorzec w całym kadrze,
+%   zwłaszcza w rogach.
+% - Ostrość obiektywu ustawiona raz i zablokowana przed kalibracją.
+% - Python + OpenCV: findChessboardCorners, cornerSubPix, calibrateCamera
+%   (CALIB_FIX_K3 przy umiarkowanej dystorsji) – wersje bibliotek.
+% - Wyniki dla każdej kamery: K, współczynniki dystorsji, RMS reprojekcji
+%   (cel < 0,5 px), wyliczony HFOV.
+% - Tab.: wyniki kalibracji 6 kamer.
+% - Rys.: wykryte narożniki na zdjęciu.
+% Stan: ⏳ (kalibracja wszystkich kamer)
+
+
+% ---------------------------------------------------------------------
+\section{Korekcja dystorsji z~użyciem tablicy LUT}
+\label{sec:lut}
+% - Dwa podejścia: metoda A – sieć na obrazie zniekształconym, poprawiany
+%   tylko centroid na PC; metoda B2 – obraz prostowany na węźle przed
+%   siecią.
+% - Dlaczego B2: model widzi obraz bez dystorsji (spójny między kamerami),
+%   obiekty przy krawędziach nie są zniekształcone, koszt na węźle mały.
+% - Generowanie LUT (Python, OpenCV: getOptimalNewCameraMatrix,
+%   initUndistortRectifyMap): jedna tablica robi naraz korekcję dystorsji
+%   i skalowanie 320x240 -> 96x96 (squash 4:3 -> 1:1 przez osobne
+%   skalowanie fx, fy).
+% - Wspólne K_new dla wszystkich kamer – jeden model działa na każdej;
+%   macierz K96 (z poprawką na środek piksela) używana na PC.
+% - Format: uint16, Q9.7, 0xFFFF = brak piksela; 2 tablice po 9216
+%   wpisów ≈ 36 kB flash na kamerę (lut_camN.h).
+% - Implementacja na węźle: interpolacja dwuliniowa w arytmetyce
+%   całkowitej, pola spoza obrazu wypełniane stałą; koszt 4,5 ms
+%   (ok. 4% pętli).
+% - Test zgodności: ta sama klatka w Pythonie (apply_lut.py) i na ESP –
+%   wynik identyczny lub ±1.
+% - Pułapki: osobna LUT na kamerę, zmiana ostrości/trybu sensora
+%   unieważnia LUT, ten sam preprocessing w treningu i firmware.
+% - Rys.: obraz przed i po LUT (proste linie).
+% - Rys.: schemat generowania LUT.
+% - Listing: funkcja LUT (fragment).
+% Stan: ✅ (metoda), ⏳ (LUT dla wszystkich kamer)
+
+
+% ---------------------------------------------------------------------
+\section{Oprogramowanie węzła}
+\label{sec:oprogramowanie-wezla}
+% - Środowisko: ESP-IDF 5.3.1 (FreeRTOS, komponenty, menuconfig/sdkconfig),
+%   VS Code + rozszerzenie ESP-IDF, idf.py. Dlaczego ESP-IDF zamiast
+%   Arduino: pełna kontrola konfiguracji, dostęp do ESP-NN; przebieg
+%   migracji.
+% - Struktura projektu: main/, komponenty (kamera, biblioteka Edge
+%   Impulse), pliki lut_camN.h.
+% - Kluczowe ustawienia sdkconfig: PSRAM octal 80 MHz, cache danych
+%   64 kB / linia 64 B, tick 1000 Hz, wyłączona kontrola sterty, partycja
+%   „Single factory app (large)”.
+% - Kamera: komponent esp32-camera, QVGA, grayscale, XCLK 20 MHz,
+%   2 bufory, GRAB_LATEST.
+% - Pętla główna: klatka -> LUT -> przygotowanie wejścia -> inferencja
+%   -> centroidy -> UDP.
+% - Inferencja: Edge Impulse SDK -> TensorFlow Lite Micro (interpreter,
+%   arena) -> jądra ESP-NN (SIMD). Arena w PSRAM (po starcie Wi-Fi
+%   zostaje ok. 66 kB RAM wewnętrznego).
+% - Trwały interpreter: łatka SDK Edge Impulse – interpreter i arena
+%   tworzone raz zamiast co klatkę (13,7 -> 0,8 ms); powtarzać po każdym
+%   eksporcie.
+% - Wyniki FOMO: centroidy w układzie 96x96, próg pewności.
+% - Problemy (problem -> przyczyna -> rozwiązanie):
+%   - model EON: crash przy pierwszej inferencji -> eksport bez EON,
+%   - ICE GCC 13.2 w nagłówkach Edge Impulse -> main.cpp na -O0,
+%     gorące pętle z __attribute__((optimize("O2"))),
+%   - kontrola sterty ok. 400 ms/klatkę -> wyłączona,
+%   - zapełniona partycja 1 MB -> większa partycja,
+%   - zmiana formatu kamery wymaga zmiany ei_camera_capture().
+% - Rys.: diagram pętli węzła.
+% - Tab.: kluczowe ustawienia konfiguracji.
+% Stan: ✅
+
+
+% ---------------------------------------------------------------------
+\section{Komunikacja UDP i~znakowanie czasem}
+\label{sec:udp}
+% - Zawartość pakietu: identyfikator węzła, klasa, centroid (u, v
+%   w 96x96), pewność, czas wykonania zdjęcia.
+% - Numer sekwencyjny klatki – liczenie utraconych pakietów
+%   (\ref{sec:wydajnosc}). ❓ czy jest/dodać.
+% - Format binarny vs tekstowy – co i dlaczego. ⏳ faktyczny format.
+% - Znacznik czasu: wcześniej moment odebrania klatki, teraz czas zdjęcia
+%   ze sterownika kamery – różnica rzędu wieku klatki.
+% - Zegar ESP liczy od startu -> SNTP na węzłach albo estymacja
+%   przesunięcia zegara na PC. ❓ wybór metody.
+% - Obsługa Wi-Fi: łączenie, ponowne łączenie po utracie sieci.
+% - Odbiór na komputerze (Python, fomo_udp_receiver.py lub węzeł ROS 2):
+%   gniazdo, rozpoznanie węzła, dekodowanie, przeliczenie czasu węzła na
+%   czas PC, bufor ostatnich detekcji z każdej kamery w oknie czasowym,
+%   wykrywanie utraty pakietów i nieaktywnych węzłów (timeout).
+% - Tab.: pola pakietu (nazwa, typ, rozmiar, opis).
+% Stan: ✅ / ⏳ / ❓
+
+
+% ---------------------------------------------------------------------
+\section{Kalibracja zewnętrzna i~fuzja detekcji}
+\label{sec:kalibracja-zewn-fuzja}
+% - Orientacja i położenie kamer względem układu robota; ponieważ
+%   wyznaczane są tylko kierunki, najważniejszy jest kąt obrotu;
+%   przesunięcie ma znaczenie dla bliskich obiektów (paralaksa).
+% - Metoda ❓: z geometrii obudowy (model OpenSCAD) + korekta / obiekt
+%   referencyjny w znanych kierunkach / obszary nakładania.
+% - Przeliczenie detekcji: centroid (u, v) -> x_n = (u - cx96)/fx96
+%   (obraz już prosty) -> alfa = atan(x_n) -> theta = alfa + psi_kamery.
+%   Dokładność wynikająca z siatki FOMO (komórka 8 px).
+% - Algorytm fuzji:
+%   - wejście: detekcje (azymut, klasa, pewność, czas) ze wszystkich kamer,
+%   - dopasowanie w czasie: okno czasowe; kompensacja obrotu robota
+%     z odometrii,
+%   - asocjacja: detekcje z sąsiednich kamer w obszarze nakładania
+%     o różnicy kąta poniżej progu -> ten sam obiekt,
+%   - łączenie: średnia ważona pewnością lub kamera, w której obiekt jest
+%     bliżej środka kadru,
+%   - wyjście: lista obiektów (azymut, klasa, pewność, czas),
+%   - parametry (próg kąta, okno czasu, próg pewności) i ich dobór;
+%     złożoność pomijalna.
+% - Rys.: stanowisko kalibracyjne.
+% - Rys.: obiekt w obszarze nakładania widziany przez 2 kamery ->
+%   1 obiekt po fuzji.
+% - Pseudokod algorytmu.
+% Stan: ❓ (metoda kalibracji) / ⏳ (fuzja)
+
+
+% ---------------------------------------------------------------------
+\section{Integracja z~ROS~2}
+\label{sec:ros2}
+% - ROS 2 krótko w kontekście użycia: węzły, tematy, publish/subscribe.
+%   Wersja i system. ⏳
+% - Węzły ESP NIE używają micro-ROS – zwykłe UDP, do ROS 2 publikuje
+%   komputer (prostota, mniej RAM na węźle, brak agenta).
+% - Węzeł ROS 2 na komputerze: odbiór -> fuzja -> publikacja.
+% - Tematy: surowe detekcje z każdej kamery i wynik fuzji. ❓ nazwy.
+% - Typ komunikatu: własny .msg (azymut, klasa, pewność, czas) lub
+%   vision_msgs. ❓
+% - Znacznik czasu w nagłówku = czas zdjęcia, nie czas publikacji.
+% - Wizualizacja w RViz: strzałki/markery kierunków wokół robota.
+% - Rys.: graf węzłów i tematów (rqt_graph).
+% - Rys.: zrzut z RViz.
+% Stan: ⏳
+

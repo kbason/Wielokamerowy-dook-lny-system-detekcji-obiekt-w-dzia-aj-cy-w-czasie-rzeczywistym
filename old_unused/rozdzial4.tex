@@ -1,0 +1,18 @@
+\chapter{Model detekcji obiektów}
+\label{chap:model}
+
+\section{Narzędzia do akwizycji obrazów}
+\label{sec:akwizycja-narzedzia}
+% UART + collect_dataset.py, podgląd Wi-Fi z przyciskiem capture na ESP32-S3
+
+\section{Budowa zbioru danych}
+\label{sec:dataset}
+% butelka + tło, surowe 320x240 -> LUT -> PNG 96x96
+
+\section{Trening modelu w środowisku Edge Impulse}
+\label{sec:trening}
+% FOMO, MobileNetV2 alpha 0.1, wejście 96x96x1, int8, eksport bez EON
+
+\section{Ocena modelu}
+\label{sec:ocena-modelu}
+% F1, macierz pomyłek, RAM/ROM, arena 270 kB

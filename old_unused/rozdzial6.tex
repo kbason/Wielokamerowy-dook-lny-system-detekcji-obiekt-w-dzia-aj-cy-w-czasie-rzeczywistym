@@ -1,0 +1,23 @@
+\chapter{Kalibracja systemu i fuzja danych}
+\label{chap:kalibracja-fuzja}
+
+\section{Model kamery i kalibracja parametrów wewnętrznych}
+\label{sec:kalibracja-wewn}
+% szachownica, RMS reprojekcji, k1
+
+\section{Korekcja dystorsji na węźle z użyciem tablicy LUT}
+\label{sec:lut}
+% metoda B2: undistort + squash w jednej LUT, Q9.7, wspólne K_new, K96,
+% test zgodności Python-firmware
+
+\section{Wyznaczanie położenia i orientacji kamer}
+\label{sec:kalibracja-zewn}
+
+\section{Przeliczenie detekcji do układu robota}
+\label{sec:uklad-robota}
+% detekcje jako kierunki (bez odległości)
+
+\section{Algorytm fuzji detekcji}
+\label{sec:fuzja}
+% nakładające się pola widzenia, usuwanie duplikatów,
+% dopasowanie czasowe do odometrii
