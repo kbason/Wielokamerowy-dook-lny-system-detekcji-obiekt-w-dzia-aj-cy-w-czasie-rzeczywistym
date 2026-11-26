@@ -219,8 +219,90 @@ elementów przedstawiono w~rozdz.~\ref{ch:implementacja}.
 % - Rys.: widok z góry – robot, 6 kamer, pola widzenia, obszary nakładania.
 % Stan: ⏳ (martwe strefy, wysokość)
 
+Liczbe kamer oraz ich rozmieszczenie wyznacza poziomy kąt widzenia kamery (HFOV, ang.~\textit{horizontal field of view}, który dla zastosowanych kamer wynosi ok. ~$76^\circ$.  Kamery rozmieszczone równomiernie na obwodzie robota pokrywają pełny kąt $360^\circ$, jeśli
+$N \cdot \mathrm{HFOV} \geq 360^\circ$, gdzie $N$ to liczba kamer.
+Wystarcza zatem sześć kamer rozstawionych co $60^\circ$. Ich łączny kąt
+widzenia wynosi $6 \cdot 76^\circ = 456^\circ$, więc pola widzenia
+sąsiednich kamer nakładają się o~ok.~$16^\circ$. Dzięki temu obiekt znajdujący się na krawędzi pola widzenia kamer pozostaje widoczny, a nie zanika między nimi. Skutkiem takiego rozwiązania, może byc podwójna detekcja tego samego obiektu przez dwie kamery, aby to skorygować zastosowano fuzję detekcji (podrozdz.~\ref{sec:kalibracja-zewn-fuzja}).
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\textwidth]{imgs/rozmieszczenie_kamer.pdf}
+  \caption{Rozmieszczenie kamer na robocie (widok z~góry). Pola widzenia
+    sąsiednich kamer nakładają się o~ok.~$16^\circ$, a~w~pobliżu robota,
+    między kamerami, występują martwe strefy}
+  \label{fig:rozmieszczenie-kamer}
+\end{figure}
+% TODO: rysunek – sześciokąt, 6 kamer, kliny pól widzenia 76°, obszary
+% nakładania, martwe strefy, wymiary r i d_min.
+\subsubsection*{Martwe strefy}
+Kamery są zamontowane na krawędziach robota, a~nie w~jednym punkcie, co skutkuje matrwymi strefami między kamerami blisko robota. Skrajne krawędzie sąsiednich kamer przecinają się w~odległości od środka robota
+\begin{equation}
+  d_{\min} = r \, \frac{\sin\left(\mathrm{HFOV}/2\right)}
+             {\sin\left(\mathrm{HFOV}/2 - 180^\circ/N\right)},
+  \label{eq:d-min}
+\end{equation}
+\noindent gdzie:
+\begin{eqwhere}[1cm]
+  \item[$r$] odległość środka obiektywu od środka robota,
+  \item[$N$] liczba kamer.
+\end{eqwhere}
 
+Dopiero dalej niż $d_{\min}$ pokrycie jest pełne. Dla $\mathrm{HFOV} =
+76^\circ$ i~$N = 6$ wzór~\eqref{eq:d-min} daje $d_{\min} \approx 4{,}4\,r$,
+czyli ok. 49 cm przy $r =$ 110 mm. Martwe strefy maleją, gdy rośnie kąt
+widzenia kamer lub gdy kamery leżą bliżej środka robota.
+
+\subsubsection*{Rozdzielczość kątowa}
+
+Model FOMO zwraca położenie obiektu z~dokładnością do jednej komórki
+siatki $12 \times 12$, czyli 8~pikseli obrazu $96 \times 96$
+(podrozdz.~\ref{sec:detekcja-mcu}). Średnio jedna komórka obejmuje więc
+$76^\circ / 12 \approx 6{,}3^\circ$. Z~modelu otworkowego
+(podrozdz.~\ref{sec:model-kamery}) wynika jednak, że kąt przypadający na
+piksel nie jest stały:
+\begin{equation}
+  \frac{\mathrm{d}\alpha}{\mathrm{d}u} = \frac{1}{f_x \left(1 + x_n^2\right)},
+  \qquad x_n = \frac{u - c_x}{f_x},
+  \label{eq:rozdzielczosc-katowa}
+\end{equation}
+\noindent gdzie:
+\begin{eqwhere}[1cm]
+  \item[$\alpha$] kąt między osią optyczną a~kierunkiem do obiektu,
+  \item[$u$] współrzędna pozioma piksela,
+  \item[$f_x$, $c_x$] ogniskowa w~pikselach i~współrzędna pozioma punktu
+        głównego,
+  \item[$x_n$] znormalizowana współrzędna pozioma.
+\end{eqwhere}
+Dla obrazu $96 \times 96$ i~kąta $76^\circ$ ogniskowa wynosi
+$f_x = 48 / \tan 38^\circ \approx 61{,}4$~piksela. Komórka w~środku kadru
+obejmuje wtedy ok.$7{,}4^\circ$, a~komórka przy krawędzi ok.$4{,}9^\circ$.
+Kierunek do obiektu jest więc wyznaczany najmniej dokładnie w~środku
+kadru, a~najdokładniej w~obszarach nakładania, gdzie dodatkowo widzą go
+dwie kamery.
+% TODO: podmienić f_x na wartość z K_new (podrozdz. \ref{sec:lut}), gdy
+% będzie znana.
+
+\subsubsection*{Wysokość montażu}
+
+Pionowy kąt widzenia kamery o~proporcjach obrazu 4:3 wynosi
+\begin{equation}
+\mathrm{VFOV}
+= 2\arctan\left(
+    \frac{3}{4}\tan\left(\frac{\mathrm{HFOV}}{2}\right)
+  \right)
+\approx 61^\circ.
+\label{eq:kat-pionowy}
+\end{equation}
+Kamera zamocowana poziomo na wysokości $h$ widzi
+podłoże dopiero od odległości $h / \tan(\mathrm{VFOV}/2) \approx 1{,}7\,h$.
+Przy $h =$~TODO~mm jest to ok.~TODO~cm. Bliższe, niskie obiekty mogą
+znaleźć się poniżej dolnej krawędzi kadru, mimo że leżą poza martwą
+strefą wyznaczoną wzorem~\eqref{eq:d-min}. Zasięg detekcji od góry
+ogranicza z~kolei mała rozdzielczość obrazu: obiekt odległy zajmuje tylko
+kilka pikseli i~model przestaje go wykrywać. Zmierzony zasięg detekcji
+podano w~podrozdz.~\ref{sec:jakosc-detekcji}.
+% TODO: jeśli kamery są pochylone, uwzględnić kąt pochylenia.
 
 % ---------------------------------------------------------------------
 \section{Obudowa i~montaż na robocie JetBot}
@@ -242,6 +324,7 @@ elementów przedstawiono w~rozdz.~\ref{ch:implementacja}.
 % - Rys.: render/rzut obudowy z polami widzenia.
 % - Rys.: zdjęcie systemu zamontowanego na robocie.
 % Stan: ✅ (projekt) / ⏳ (wydruk, zdjęcia, zasilanie)
+Do dokładnego rozmieszczenia kamer na robocie zdecydowano wykonać obudowę wykonaną w metodzie druku 3D. Platforma na którą będzie montowana to JetBot ROS AI Kit [todo odwolanie], z zdemontowaną przednią kamerą. Obudowa zaprojektowana została na podstawie modelu STEP robota [todo odwolanie]. Forma obudowy to nakładka o średnicy 200m z wcięciami ma koła oraz PCB robota. Kamery zostały rozmieszczone na ściankach szesciokąta foremnego zgodnie z załozeniami \ref{sec:rozmieszczenie}. Do zamocowania węzłów kamerowych (6x ESP32-S3) zastosowano wsuwane sloty rozmieszczone w bliskiej odległości otworów na kamery. Zasilanie węzłów zostało zrealizowane za pomocą goldpinów dostępnych na PCB robota. [TODO wydajność prądowa i pomiar z jednego esp (wykres)]. 
 
 
 % ---------------------------------------------------------------------

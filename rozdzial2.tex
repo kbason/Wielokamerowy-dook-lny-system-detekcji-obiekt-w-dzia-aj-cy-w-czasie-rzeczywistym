@@ -26,9 +26,9 @@
 Węzeł kamerowy opisany w~dalszej części pracy jest systemem wbudowanym
 zbudowanym na układzie SoC (ang.~\textit{System on Chip} -- system w~jednym
 układzie scalonym). System wbudowany to system przetwarzania informacji
-umieszczony wewnątrz większego urządzenia \cite[s.~2]{marwedel_2021}. Wykonuje
+umieszczony wewnątrz większego urządzenia \cite{marwedel_2021}. Wykonuje
 jedno, z~góry określone zadanie przy ograniczonej pamięci, mocy obliczeniowej
-i~energii, często z~wymaganiami czasowymi \cite[podrozdz.~1.4]{marwedel_2021}.
+i~energii, często z~wymaganiami czasowymi \cite{marwedel_2021}.
 
 \subsubsection*{Mikrokontroler i~układ SoC}
 
@@ -36,23 +36,22 @@ W~mikroprocesorze (ang.~\textit{microprocessor unit}, MPU) pamięć i~układy
 peryferyjne są osobnymi układami scalonymi. Mikrokontroler
 (ang.~\textit{microcontroller unit}, MCU) zawiera w~jednym układzie procesor,
 pamięć RAM, pamięć programu oraz peryferia, takie jak liczniki, przetworniki
-analogowo-cyfrowe i~interfejsy komunikacyjne \cite[podrozdz.~1.2]{wolf_2017}.
+analogowo-cyfrowe i~interfejsy komunikacyjne \cite{wolf_2017}.
 Jest przez to tani, pobiera mało energii i~reaguje na zdarzenia
 w~przewidywalnym czasie. Układ SoC dokłada do tego wyspecjalizowane bloki, np.
 moduł radiowy Wi-Fi, akceleratory sprzętowe lub kilka rdzeni
-\cite[podrozdz.~3.3.2]{marwedel_2021}. Granica między MCU a~SoC jest umowna:
+\cite{marwedel_2021}. Granica między MCU a~SoC jest umowna:
 producenci opisują mikrokontrolery z~wbudowanym Wi-Fi jako SoC oparte na
 mikrokontrolerze \cite{espressif_esp32s3_ds}. Do tej grupy należy ESP32-S3,
 opisany w~podrozdz.~\ref{sec:wezel}.
 
 \subsubsection*{Hierarchia pamięci}
 
-Pamięć szybka jest droga, a~pamięć pojemna jest wolna. Dlatego organizuje się
-ją w~hierarchię: im bliżej rdzenia, tym mniejsza i~szybsza
-\cite[podrozdz.~2.1]{hennessy_2019}, \cite[podrozdz.~3.4.2]{marwedel_2021}.
+Ze względu na wysoki koszt szybkiej pamięci oraz niższą szybkość pamięci o dużej pojemności, pamięć komputera organizuje się hierarchicznie: im bliżej rdzenia, tym jest mniejsza i szybsza
+\cite{hennessy_2019}, \cite{marwedel_2021}.
 Hierarchia działa, bo programy odwołują się najczęściej do danych używanych
 przed chwilą i~do adresów sąsiednich (lokalność czasowa i~przestrzenna)
-\cite[dod.~B.1]{hennessy_2019}. W~układach SoC występują zwykle cztery
+\cite{hennessy_2019}. W~układach SoC występują zwykle cztery
 poziomy pamięci (rys.~\ref{fig:hierarchia-pamieci}):
 \begin{itemize}[nosep]
   \item \textbf{wewnętrzna SRAM} (ang.~\textit{static RAM}) -- setki
@@ -84,7 +83,7 @@ Taką organizację ma m.in. ESP32-S3 \cite[rozdz.~4]{espressif_esp32s3_trm},
 
 Gdy potrzebnych danych nie ma w~pamięci podręcznej (ang.~\textit{cache miss}),
 procesor czeka, aż cała linia zostanie sprowadzona z~wolniejszej pamięci
-\cite[dod.~B.1]{hennessy_2019}. Algorytmy przeglądające w~każdej klatce duże
+\cite{hennessy_2019}. Algorytmy przeglądające w~każdej klatce duże
 tablice -- wagi sieci neuronowej lub tablicę przekodowań obrazu -- są więc
 wrażliwe na rozmiar pamięci podręcznej i~na to, w~której pamięci leżą dane.
 Widać to w~pomiarach w~podrozdz.~\ref{sec:wydajnosc}.
@@ -93,29 +92,29 @@ Widać to w~pomiarach w~podrozdz.~\ref{sec:wydajnosc}.
 
 Instrukcje SIMD (ang.~\textit{single instruction, multiple data}) wykonują
 tę samą operację na kilku danych naraz, zapisanych w~jednym szerokim rejestrze
-\cite[podrozdz.~4.3]{hennessy_2019}, \cite[podrozdz.~3.3.2]{marwedel_2021}.
+\cite{hennessy_2019}, \cite{marwedel_2021}.
 Rejestr 128-bitowy mieści 16 liczb 8-bitowych, więc jedna instrukcja zastępuje
 16 zwykłych. W~sieciach neuronowych podstawową operacją jest mnożenie
 z~akumulacją (ang.~\textit{multiply-accumulate}, MAC): $a \leftarrow a + w
 \cdot x$. SIMD przyspiesza je najbardziej, gdy dane są wąskimi liczbami
 całkowitymi ułożonymi w~pamięci kolejno i~z~wyrównaniem
-\cite[podrozdz.~4.3]{hennessy_2019} -- stąd znaczenie kwantyzacji do 8~bitów
+\cite{hennessy_2019} -- stąd znaczenie kwantyzacji do 8~bitów
 (podrozdz.~\ref{sec:detekcja-mcu}).
 
 Kod SIMD pisze się zwykle ręcznie, dlatego producenci dostarczają biblioteki
 gotowych jąder obliczeniowych dla warstw sieci. Biblioteka CMSIS-NN dla
 procesorów Arm Cortex-M przyspieszyła sieć splotową 4,6~razy względem
-implementacji bazowej \cite[rozdz.~6]{lai_2018}. Odpowiednikiem dla układów
+implementacji bazowej \cite{lai_2018}. Odpowiednikiem dla układów
 Espressif jest ESP-NN \cite{espressif_espnn}, która w~ESP32-S3 korzysta
 z~rozszerzenia PIE (ang.~\textit{Processor Instruction Extensions})
-\cite[rozdz.~1]{espressif_esp32s3_trm}.
+\cite{espressif_esp32s3_trm}.
 
 \subsubsection*{Bezpośredni dostęp do pamięci}
 
 Kontroler DMA (ang.~\textit{direct memory access}) przesyła dane między
 peryferium a~pamięcią bez udziału procesora, który w~tym czasie może liczyć
-\cite[podrozdz.~4.3]{wolf_2017}. W~systemach z~kamerą DMA przepisuje piksele
-z~interfejsu kamery do bufora ramki \cite[rozdz.~3]{espressif_esp32s3_trm}.
+\cite{wolf_2017}. W~systemach z~kamerą DMA przepisuje piksele
+z~interfejsu kamery do bufora ramki \cite{espressif_esp32s3_trm}.
 Przy dwóch buforach kamera zapisuje nową klatkę do jednego, a~program
 przetwarza klatkę z~drugiego \cite{espressif_esp32camera}. Akwizycja
 i~obliczenia idą wtedy równolegle, ale przetwarzana klatka ma już swój
@@ -126,10 +125,10 @@ w~opóźnienie systemu (podrozdz.~\ref{sec:wydajnosc}).
 
 System czasu rzeczywistego to system, którego poprawność zależy nie tylko od
 wyniku, lecz także od chwili, w~której wynik powstaje
-\cite[podrozdz.~1.1]{kopetz_2011}. Według Kopetza termin
+\cite{kopetz_2011}. Według Kopetza termin
 (ang.~\textit{deadline}) jest twardy, gdy jego przekroczenie może mieć poważne
 skutki, oraz typu \textit{firm}, gdy spóźniony wynik jest bezużyteczny, ale
-nie szkodzi \cite[podrozdz.~1.1]{kopetz_2011}. Detekcja obiektów wokół robota
+nie szkodzi \cite{kopetz_2011}. Detekcja obiektów wokół robota
 należy do tej drugiej grupy: spóźniony wynik opisuje nieaktualne położenie,
 więc się go odrzuca, a~po chwili przychodzi nowy. Ten argument wraca przy
 wyborze protokołu w~podrozdz.~\ref{sec:protokoly}.
@@ -138,11 +137,11 @@ System operacyjny czasu rzeczywistego (ang.~\textit{real-time operating
 system}, RTOS), np. FreeRTOS, dzieli program na zadania o~stałych
 priorytetach. Planista uruchamia zawsze gotowe zadanie o~najwyższym
 priorytecie i~wywłaszcza zadanie bieżące, gdy tylko takie się pojawi
-\cite[podrozdz.~4.12.3]{barry_freertos}. Zadanie czekające na dane, np. na
+\cite{barry_freertos}. Zadanie czekające na dane, np. na
 element kolejki, jest zablokowane i~nie zużywa czasu procesora
-\cite[podrozdz.~4.7.1, 5.2.3]{barry_freertos}. Czas w~RTOS odmierza takt
+\cite{barry_freertos}. Czas w~RTOS odmierza takt
 systemowy (ang.~\textit{tick}) -- okresowe przerwanie, którego częstotliwość
-wyznacza rozdzielczość opóźnień \cite[podrozdz.~4.6]{barry_freertos}.
+wyznacza rozdzielczość opóźnień \cite{barry_freertos}.
 W~układach dwurdzeniowych stosuje się wariant symetryczny
 (ang.~\textit{symmetric multiprocessing}, SMP), w~którym zadanie można
 przypiąć do wybranego rdzenia \cite{espressif_idf_freertos}. Pozwala to
@@ -208,17 +207,125 @@ oddzielić obliczenia od obsługi sieci i~kamery
 % Stan: ✅ (teoria)
 
 
+
 % ---------------------------------------------------------------------
 \section{Protokoły transportowe w~systemach czasu rzeczywistego}
 \label{sec:protokoly}
-% - Do ok. 1 strony (najłatwiejsze miejsce do skrócenia).
-% - TCP: połączeniowy, potwierdzenia, retransmisje, kolejność – kosztem
-%   opóźnień (head-of-line blocking).
-% - UDP: datagramy bez połączenia i retransmisji, nagłówek 8 B.
-% - Dlaczego UDP w czasie rzeczywistym: stary wynik detekcji jest
-%   bezwartościowy – lepiej zgubić pakiet niż czekać.
-% - Konsekwencje: obsługa utraty, duplikatów, kolejności po stronie
-%   aplikacji (numer sekwencyjny, znacznik czasu).
-% - Wi-Fi 2,4 GHz: wspólne medium, zmienne opóźnienie.
-% - Tab.: TCP vs UDP.
-% Stan: ✅ (teoria)
+% Stan: ✅ tekst (v1, ok. 1,5 str. z tabelą); ⏳ sprawdzić miejsca
+% w źródłach oznaczone (?) w komentarzach.
+
+Węzły kamerowe przesyłają wyniki detekcji do komputera nadrzędnego przez
+sieć. W~sieciach opartych na protokole IP (ang.~\textit{Internet Protocol})
+dane aplikacji przenosi protokół warstwy transportowej, najczęściej TCP
+(ang.~\textit{Transmission Control Protocol}) lub UDP
+(ang.~\textit{User Datagram Protocol}) \cite{kurose_2021}. Oba dostarczają
+dane do właściwego programu na podstawie numeru portu, ale różnią się tym,
+co gwarantują.
+% kurose_2021: podrozdz. 3.1.2 i 3.2
+
+\subsubsection*{Protokół TCP}
+
+Przed wysłaniem danych TCP nawiązuje połączenie: obie strony wymieniają
+trzy segmenty (ang.~\textit{three-way handshake}) \cite{rfc9293}. Dane są
+traktowane jako ciągły strumień bajtów, który dociera do odbiorcy
+w~całości, bez powtórzeń i~w~kolejności nadania \cite{rfc9293}. Odbiorca
+potwierdza odebrane dane, a~nadawca ponawia segmenty, dla których
+potwierdzenie nie przyszło w~wyznaczonym czasie \cite{rfc9293}. TCP
+ogranicza też tempo nadawania, gdy odbiorca lub sieć nie nadążają
+(kontrola przepływu i~kontrola przeciążenia) \cite{kurose_2021}.
+% rfc9293: podrozdz. 2.2 (strumień, niezawodność, kolejność),
+% 3.5 (nawiązanie połączenia), 3.8.1 (retransmisje)
+% kurose_2021: podrozdz. 3.5.5 (flow control), 3.7 (congestion control)
+
+Ceną za niezawodność jest opóźnienie. Gdy jeden segment zaginie, dane
+wysłane po nim czekają u~odbiorcy, aż brakujący segment zostanie
+dostarczony ponownie, nawet jeśli same dotarły wcześniej
+(ang.~\textit{head-of-line blocking}) \cite{kurose_2021}. Małe wiadomości
+mogą być dodatkowo wstrzymywane i~łączone w~większe segmenty przez
+algorytm Nagle'a \cite{rfc896}; aplikacja może go wyłączyć
+\cite{rfc9293}.
+% kurose_2021: podrozdz. 2.2.5 (HOL blocking przy HTTP/2) i 3.8 (QUIC) (?)
+% rfc896: cały dokument (krótki); rfc9293: podrozdz. 3.7.4
+
+\subsubsection*{Protokół UDP}
+
+UDP jest znacznie prostszy. Każda wiadomość jest wysyłana jako osobny
+datagram, bez nawiązywania połączenia \cite{rfc768}. Nagłówek ma tylko
+8~bajtów: port nadawcy, port odbiorcy, długość i~sumę kontrolną
+\cite{rfc768}, podczas gdy nagłówek TCP ma co najmniej 20~bajtów
+\cite{rfc9293}. UDP nie potwierdza odbioru, nie ponawia transmisji i~nie
+pilnuje kolejności. Datagram może więc zaginąć, dotrzeć dwukrotnie albo
+wyprzedzić datagram wysłany wcześniej \cite{kurose_2021}. Zachowane są za
+to granice wiadomości: jeden wysłany datagram to jeden odebrany datagram.
+Datagram powinien mieścić się w~jednej ramce sieci lokalnej (MTU,
+ang.~\textit{maximum transmission unit}, zwykle 1500~B). Większy zostaje
+podzielony na fragmenty, a~do odtworzenia potrzebne są wszystkie
+\cite{kurose_2021}. Porównanie obu protokołów zestawiono
+w~tab.~\ref{tab:tcp-udp}.
+% rfc768: s. 1 (format nagłówka, brak gwarancji dostarczenia i braku duplikatów)
+% rfc9293: podrozdz. 3.1 (Data Offset min. 5 słów = 20 B)
+% kurose_2021: podrozdz. 3.3 i 3.3.1 (UDP); 4.3.2 (fragmentacja, MTU 1500 B) (?)
+
+\begin{table}[htbp]
+\centering
+\caption{Porównanie protokołów TCP i~UDP (opracowanie własne na
+podstawie \cite{rfc768,rfc9293,kurose_2021})}
+\label{tab:tcp-udp}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.6cm}XX}
+\toprule
+\textbf{Cecha} & \textbf{TCP} & \textbf{UDP} \\
+\midrule
+Połączenie & nawiązywane przed transmisją & brak \\
+Jednostka danych & strumień bajtów, bez granic wiadomości
+& datagram z~zachowaną granicą wiadomości \\
+Potwierdzenia i~retransmisje & tak & nie \\
+Kolejność i~duplikaty & pilnowane przez protokół
+& do obsłużenia przez aplikację \\
+Kontrola przepływu i~przeciążenia & tak & nie \\
+Nagłówek & min. 20~B & 8~B \\
+Opóźnienie przy utracie pakietu & rośnie (czekanie na retransmisję)
+& bez zmian (pakiet przepada) \\
+Typowe zastosowania & WWW, poczta, przesyłanie plików
+& strumienie audio i~wideo, DNS, dane pomiarowe \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection*{Wybór protokołu dla danych czasu rzeczywistego}
+
+UDP jest właściwym wyborem dla aplikacji, które same chcą decydować, co
+i~kiedy wysłać, i~tolerują niewielkie straty danych \cite{kurose_2021}.
+Wynik detekcji ma termin typu \textit{firm}
+(podrozdz.~\ref{sec:mcu-soc}): po czasie jest bezużyteczny. Ponowienie
+zagubionego pakietu dostarczyłoby informację o~położeniu obiektu sprzed
+chwili, a~w~tym czasie węzeł wysyła już wynik z~następnej klatki.
+Retransmisje TCP nie poprawiają więc jakości danych, tylko wstrzymują
+nowsze. Z~tego samego powodu na UDP działa protokół RTP, używany do
+przesyłania dźwięku i~obrazu w~czasie rzeczywistym \cite{rfc3550}.
+% kurose_2021: podrozdz. 3.3 (lista powodów wyboru UDP)
+% rfc3550: podrozdz. 1 (RTP zwykle na UDP)
+
+Rezygnacja z~TCP przenosi część zadań do aplikacji. Numer sekwencyjny
+w~pakiecie pozwala odbiorcy wykryć utracone pakiety, duplikaty i~zmianę
+kolejności, a~znacznik czasu pozwala ocenić wiek danych i~zestawić
+w~czasie pakiety z~różnych źródeł \cite{rfc3550}. Takie pola zastosowano
+w~pakiecie wysyłanym przez węzły (podrozdz.~\ref{sec:udp}).
+% rfc3550: podrozdz. 5.1 (pola sequence number i timestamp)
+
+\subsubsection*{Sieć Wi-Fi jako medium transmisyjne}
+
+W~sieci Wi-Fi (IEEE~802.11) wszystkie urządzenia dzielą ten sam kanał
+radiowy. Przed nadaniem stacja nasłuchuje kanału i~odczekuje losowy czas,
+aby uniknąć kolizji (CSMA/CA, ang.~\textit{carrier sense multiple access
+with collision avoidance}) \cite{kurose_2021}. Czas dostarczenia ramki
+zależy więc od liczby nadających urządzeń i~od zakłóceń, a~przy tym
+zmienia się od ramki do ramki (ang.~\textit{jitter}). Ramki wysyłane do
+jednego odbiorcy są potwierdzane w~warstwie łącza danych, a~przy braku
+potwierdzenia ponawiane \cite{kurose_2021}. UDP w~sieci Wi-Fi nie jest
+zatem całkiem pozbawiony retransmisji, ale liczba prób jest ograniczona
+i~po ich wyczerpaniu ramka przepada \cite{kurose_2021}. Pasmo 2,4~GHz ma
+tylko trzy wzajemnie niezachodzące kanały (1, 6 i~11) i~jest
+współdzielone z~sąsiednimi sieciami \cite{kurose_2021}. Wpływ tych
+zjawisk na opóźnienie systemu pokazano w~podrozdz.~\ref{sec:wydajnosc}.
+% kurose_2021: podrozdz. 7.3.1 (kanały 2,4 GHz), 7.3.2 (CSMA/CA,
+% potwierdzenia ACK i ponawianie ramek)
