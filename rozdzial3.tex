@@ -201,8 +201,120 @@ elementów przedstawiono w~rozdz.~\ref{ch:implementacja}.
 % - Pobór prądu węzła (średni i szczytowy przy nadawaniu Wi-Fi). ⏳
 % - Rys.: zdjęcie węzła.
 % Stan: ✅ / ⏳
+Węzeł kamerowy składa się z~mikrokontrolera ESP32-S3 i~modułu kamery.
+Na węźle wykonywane jest zdjęcie, detekcja obiektów oraz wysłanie wyników
+do komputera nadrzędnego (podrozdz.~\ref{sec:wymagania}).
 
+\subsubsection*{Wybór mikrokontrolera}
 
+Od mikrokontrolera węzła wymaga się jednocześnie: obsługi kamery
+z~równoległym interfejsem danych, wbudowanego Wi-Fi, pamięci
+wystarczającej na bufor klatki i~obszar roboczy modelu (arenę) oraz mocy
+obliczeniowej pozwalającej wykonywać sieć neuronową z~częstotliwością
+kilku klatek na sekundę. Warunki te spełniają układy z~rodziny ESP32
+firmy Espressif, które są przy tym tanie i~dostępne w~postaci gotowych
+płytek z~kamerą.
+
+Prace rozpoczęto na module ESP32-CAM (AI-Thinker)~\cite{aithinker_esp32cam}
+z~układem ESP32-D0WD-V3 i~sensorem OV3660. Na tej platformie powstały
+pierwsze wersje oprogramowania węzła. W~trakcie prac ujawniły się jednak
+ograniczenia tego układu, które skłoniły do przejścia na ESP32-S3.
+Porównanie obu układów zestawiono w~tab.~\ref{tab:esp32-vs-s3}.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Porównanie układów ESP32 (moduł ESP32-CAM) i~ESP32-S3
+    (płytka Goouuu Tech ESP32-S3-CAM)}
+  \label{tab:esp32-vs-s3}
+  \begin{tabular}{lll}
+    \toprule
+    Parametr & ESP32 & ESP32-S3 \\
+    \midrule
+    Rdzenie procesora    & 2 $\times$ Xtensa LX6 & 2 $\times$ Xtensa LX7 \\
+    Maks. taktowanie     & 240~MHz               & 240~MHz \\
+    Wewnętrzna SRAM      & 520~kB                & 512~kB \\
+    Zewnętrzna PSRAM     & 4~MB (Quad SPI)       & 8~MB (Octal SPI) \\
+    Pamięć flash         & 4~MB                  & 16~MB \\
+    Instrukcje wektorowe & brak                  & tak (rozszerzenie PIE) \\
+    Optymalizacje ESP-NN & ogólne (język C)      & asembler z~SIMD \\
+    Programowanie        & konwerter USB-UART    & wbudowane USB \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{2pt}
+  {\footnotesize Źródło: opracowanie własne na
+  podstawie~\cite{espressif_esp32_ds,espressif_esp32s3_ds,espressif_esp32s3_wroom1,aithinker_esp32cam,espressif_espnn}.}
+\end{table}
+
+Najważniejszą różnicą są instrukcje wektorowe (SIMD), dostępne
+w~rdzeniach ESP32-S3 w~ramach rozszerzenia PIE (ang.~\textit{Processor
+Instruction Extensions})~\cite{espressif_esp32s3_trm,espressif_pie_blog}.
+Biblioteka ESP-NN wykorzystuje je w~asemblerowych implementacjach
+splotu, warstw w~pełni połączonych i~innych operacji sieci neuronowych,
+a~dla układu ESP32 stosuje jedynie ogólne optymalizacje w~języku
+C~\cite{espressif_espnn}. Według danych producenta model detekcji osób
+(\textit{person detection}, int8) z~danymi w~pamięci wewnętrznej
+wykonuje się na ESP32-S3 w~54~ms, a~na ESP32 w~380~ms, czyli ok.
+7~razy dłużej przy tym samym taktowaniu 240~MHz~\cite{espressif_espnn}.
+
+Drugim czynnikiem jest pamięć. Arena modelu zajmuje ok.~270~kB i~nie
+mieści się w~wolnej pamięci wewnętrznej, której po uruchomieniu Wi-Fi
+zostaje ok.~66~kB. Arena musi więc znajdować się w~zewnętrznej pamięci
+PSRAM, a~jej pojemność i~szybkość wpływają na czas wykonania sieci.
+ESP32-S3 ma pamięć Octal PSRAM taktowaną z~częstotliwością 80~MHz,
+a~ESP32-CAM pamięć Quad SPI.
+
+Znaczenie miała również wygoda pracy. Moduł ESP32-CAM nie ma
+wbudowanego złącza USB, a~przed każdym wgraniem oprogramowania wymaga
+ręcznego zwarcia wyprowadzenia GPIO0 do masy. Płytka z~ESP32-S3 jest
+programowana bezpośrednio przez USB, co przy sześciu węzłach upraszcza
+aktualizację oprogramowania. Na podstawie powyższych porównań jako
+platformę węzła wybrano układ ESP32-S3.
+
+\subsubsection*{Kamera}
+
+W~węzłach zastosowano moduły kamer DCX-OV5640 z~sensorem OV5640
+[TODO odwołanie]. Producent deklaruje kąt widzenia $120^\circ$
+[TODO: kąt poziomy czy przekątny?]. Kamera pracuje w~rozdzielczości
+QVGA ($320 \times 240$) w~odcieniach szarości, z~sygnałem zegarowym
+XCLK o~częstotliwości 20~MHz.
+
+Przy wyborze kąta widzenia trzeba było pogodzić dwa przeciwstawne
+wymagania. Kamera o~mniejszym kącie ma mniejszą dystorsję i~daje więcej
+pikseli na obiekt, ale sześć takich kamer nie pokryje pełnego kąta
+$360^\circ$. Większy kąt zapewnia pokrycie z~nakładaniem pól widzenia,
+kosztem większej dystorsji. Przyjęto wymaganie poziomego kąta widzenia
+w~zakresie $70$--$90^\circ$.
+
+Poziomy kąt widzenia kamery wyznaczono pomiarowo. Kamerę ustawiono
+w~odległości $d$ od miarki i~odczytano szerokość $w$ widocznego
+w~kadrze odcinka miarki. Kąt obliczono ze wzoru
+\begin{equation}
+  \mathrm{HFOV} = 2 \arctan\left(\frac{w}{2d}\right).
+  \label{eq:hfov-pomiar}
+\end{equation}
+Dla $d =$~20~cm i~$w =$~31~cm otrzymano
+$\mathrm{HFOV} \approx 76^\circ$, co mieści się w~przyjętym zakresie.
+
+\subsubsection*{Płytka węzła}
+
+Węzeł zbudowano na płytce Goouuu Tech ESP32-S3-CAM~[TODO odwołanie]
+w~wersji N16R8, z~16~MB pamięci flash i~8~MB pamięci PSRAM.
+Płytka jest programowana przez USB. [TODO: złącza płytki.]
+
+Rozważano również zaprojektowanie własnej płytki węzła. Zrezygnowano
+z~tego ze względu na czas i~koszt, a~gotowe moduły spełniały wymagania
+systemu.
+
+[TODO: pobór prądu węzła – średni i~szczytowy przy nadawaniu Wi-Fi.]
+Sposób zasilania węzłów opisano w~podrozdz.~\ref{sec:obudowa}.
+
+% \begin{figure}[htbp]
+%   \centering
+%   \includegraphics[width=0.5\textwidth]{imgs/wezel.jpg}
+%   \caption{Węzeł kamerowy}
+%   \label{fig:wezel}
+% \end{figure}
 % ---------------------------------------------------------------------
 \section{Rozmieszczenie kamer}
 \label{sec:rozmieszczenie}
@@ -219,7 +331,7 @@ elementów przedstawiono w~rozdz.~\ref{ch:implementacja}.
 % - Rys.: widok z góry – robot, 6 kamer, pola widzenia, obszary nakładania.
 % Stan: ⏳ (martwe strefy, wysokość)
 
-Liczbe kamer oraz ich rozmieszczenie wyznacza poziomy kąt widzenia kamery (HFOV, ang.~\textit{horizontal field of view}, który dla zastosowanych kamer wynosi ok. ~$76^\circ$.  Kamery rozmieszczone równomiernie na obwodzie robota pokrywają pełny kąt $360^\circ$, jeśli
+Liczbe kamer oraz ich rozmieszczenie wyznacza poziomy kąt widzenia kamery (HFOV, ang.~\textit{horizontal field of view}), który dla zastosowanych kamer wynosi ok. ~$76^\circ$.  Kamery rozmieszczone równomiernie na obwodzie robota pokrywają pełny kąt $360^\circ$, jeśli
 $N \cdot \mathrm{HFOV} \geq 360^\circ$, gdzie $N$ to liczba kamer.
 Wystarcza zatem sześć kamer rozstawionych co $60^\circ$. Ich łączny kąt
 widzenia wynosi $6 \cdot 76^\circ = 456^\circ$, więc pola widzenia
@@ -227,7 +339,7 @@ sąsiednich kamer nakładają się o~ok.~$16^\circ$. Dzięki temu obiekt znajduj
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\textwidth]{imgs/rozmieszczenie_kamer.pdf}
+  \includegraphics[width=0.7\textwidth]{imgs/rozmieszczenie_kamer.png}
   \caption{Rozmieszczenie kamer na robocie (widok z~góry). Pola widzenia
     sąsiednich kamer nakładają się o~ok.~$16^\circ$, a~w~pobliżu robota,
     między kamerami, występują martwe strefy}
@@ -342,13 +454,15 @@ dostępnych na płytce PCB robota.
 % TODO: wydajność prądowa goldpinów robota vs. pobór 6 węzłów;
 % pomiar prądu jednego ESP32-S3 (wykres).
 Przy projektowaniu należało uwzględnić położenie dwóch anten robota, znajdują się one przy wcięciach na koła z tyłu robota. Zastosowano chłodzenie pasywne przez szczeliny w~obudowie.
-[TODO: rysunek z~renderem obudowy i~polami widzenia kamer]
-% \begin{figure}[htbp]
-%   \centering
-%   \includegraphics[width=0.7\textwidth]{imgs/obudowa_render.png}
-%   \caption{Model obudowy z~zaznaczonymi polami widzenia kamer}
-%   \label{fig:obudowa-render}
-% \end{figure}
+
+Model podstawy obudowy przedstawiono na rys.~\ref{fig:obudowa-render}.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\textwidth]{imgs/obudowa_render.pdf}
+  \caption{Model podstawy obudowy}
+  \label{fig:obudowa-render}
+\end{figure}
 
 \subsubsection*{Wykonanie}
 
