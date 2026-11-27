@@ -324,8 +324,80 @@ podano w~podrozdz.~\ref{sec:jakosc-detekcji}.
 % - Rys.: render/rzut obudowy z polami widzenia.
 % - Rys.: zdjęcie systemu zamontowanego na robocie.
 % Stan: ✅ (projekt) / ⏳ (wydruk, zdjęcia, zasilanie)
-Do dokładnego rozmieszczenia kamer na robocie zdecydowano wykonać obudowę wykonaną w metodzie druku 3D. Platforma na którą będzie montowana to JetBot ROS AI Kit [todo odwolanie], z zdemontowaną przednią kamerą. Obudowa zaprojektowana została na podstawie modelu STEP robota [todo odwolanie]. Forma obudowy to nakładka o średnicy 200m z wcięciami ma koła oraz PCB robota. Kamery zostały rozmieszczone na ściankach szesciokąta foremnego zgodnie z załozeniami \ref{sec:rozmieszczenie}. Do zamocowania węzłów kamerowych (6x ESP32-S3) zastosowano wsuwane sloty rozmieszczone w bliskiej odległości otworów na kamery. Zasilanie węzłów zostało zrealizowane za pomocą goldpinów dostępnych na PCB robota. [TODO wydajność prądowa i pomiar z jednego esp (wykres)]. 
+Aby kamery znalazły się dokładnie w~położeniach wyznaczonych
+w~podrozdz.~\ref{sec:rozmieszczenie}, zaprojektowano dla nich obudowę
+wykonaną w~technologii druku~3D. Obudowa jest montowana na robocie
+JetBot ROS AI Kit~\cite{waveshare_jetbot_ros}, z~którego zdemontowano
+przednią kamerę. Projekt powstał na podstawie modelu STEP
+robota~\cite{waveshare_jetbot_ros_3d}.
 
+\subsubsection*{Konstrukcja}
+
+Obudowa ma formę nakładki o~średnicy 200~mm, z~wcięciami na koła oraz
+na płytkę PCB robota. Sześć kamer umieszczono na ściankach sześciokąta
+foremnego, zgodnie z~założeniami z~podrozdz.~\ref{sec:rozmieszczenie}.
+Węzły kamerowe, czyli sześć modułów ESP32-S3, osadzono we wsuwanych
+slotach w~pobliżu otworów na kamery. Węzły są zasilane z~goldpinów
+dostępnych na płytce PCB robota.
+% TODO: wydajność prądowa goldpinów robota vs. pobór 6 węzłów;
+% pomiar prądu jednego ESP32-S3 (wykres).
+Przy projektowaniu należało uwzględnić położenie dwóch anten robota, znajdują się one przy wcięciach na koła z tyłu robota. Zastosowano chłodzenie pasywne przez szczeliny w~obudowie.
+[TODO: rysunek z~renderem obudowy i~polami widzenia kamer]
+% \begin{figure}[htbp]
+%   \centering
+%   \includegraphics[width=0.7\textwidth]{imgs/obudowa_render.png}
+%   \caption{Model obudowy z~zaznaczonymi polami widzenia kamer}
+%   \label{fig:obudowa-render}
+% \end{figure}
+
+\subsubsection*{Wykonanie}
+
+Model obudowy przygotowano jako model parametryczny w~programie
+OpenSCAD~\cite{openscad}. Do wykonania obudowy wybrano druk w~technologii
+FDM na drukarce Bambu Lab P2S~\cite{bambulab_p2s} z~filamentu PETG.
+Obudowa składa się z~dwóch części [TODO: jakich i~jak są łączone].
+Parametry druku zestawiono w~tab.~\ref{tab:parametry-druku}.
+
+Ścianki obudowy są na tyle cienkie, że składają się praktycznie z~samych
+obrysów, więc wypełnienie ma znikomy udział w~wydruku. Czas druku wynosi ok.~6~h, a~masa wydruku
+ok.~300~g.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Parametry druku obudowy}
+  \label{tab:parametry-druku}
+  \begin{tabular}{ll}
+    \toprule
+    Parametr & Wartość \\
+    \midrule
+    Technologia          & FDM \\
+    Drukarka             & Bambu Lab P2S \\
+    Materiał             & PETG \\
+    Średnica dyszy       & 0,4~mm \\
+    Wysokość warstwy     & 0,2~mm \\
+    Wypełnienie          & 15\,\%, wzór siatki \\
+    Liczba obrysów       & 2 \\
+    Liczba części        & 2 \\
+    Czas druku           & ok.~6~h \\
+    Masa wydruku         & ok.~300~g \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsubsection*{Zasilanie}
+Węzły są zasilane z~goldpinów dostępnych na płytce PCB robota.
+[TODO: sposób rozprowadzenia zasilania do sześciu węzłów.]
+[TODO: wydajność prądowa goldpinów robota i~bilans prądowy sześciu
+węzłów; pomiar prądu jednego ESP32-S3 (wykres).]
+
+[TODO: zdjęcie systemu zamontowanego na robocie]
+
+% \begin{figure}[htbp]
+%   \centering
+%   \includegraphics[width=0.7\textwidth]{imgs/jetbot_zamontowany.jpg}
+%   \caption{System zamontowany na robocie JetBot}
+%   \label{fig:jetbot-zamontowany}
+% \end{figure}
 
 % ---------------------------------------------------------------------
 \section{Komputer nadrzędny i~sieć}
